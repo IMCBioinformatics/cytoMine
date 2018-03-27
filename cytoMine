@@ -260,6 +260,7 @@ ggsave(
     ## Add condition info
     mm <- match(ggdf$sample_id, sample_id)
     ggdf$condition <- factor(md$Group[mm])
+	write.csv(ggdf,paste0(newclustDir,"/boxplot_FLOWSOM_data.csv"))
     ggsave(filename = paste0(newclustDir,"/boxplot_FLOWSOM.",device),
            ggplot(ggdf) +
              geom_boxplot(aes(x = condition, y = proportion, color = condition,

@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1525108845345.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "275719280",
+    "id" : "EEC7B41C",
+    "lastKnownWriteTime" : 1525115901,
+    "last_content_update" : 1525115901371,
+    "path" : "~/projects/cytoMine/cytoMine.R",
+    "project_path" : "cytoMine.R",
+    "properties" : {
+        "cursorPosition" : "348,83",
+        "scrollLine" : "332"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

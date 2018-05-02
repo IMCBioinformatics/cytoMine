@@ -57,7 +57,6 @@ inputDir<-as.character(opts$inputDir)
 ## device
 device<-ifelse(is.null(opts$device),
                        "png",as.character(opts$device))
-print(device)
 
 ## concat
 concat<- ifelse(is.null(opts$concat), FALSE, TRUE)
@@ -235,13 +234,13 @@ ggp <- ggplot(dr,  aes(x = tSNE1, y = tSNE2, color = cell_mclust_FS)) +
 message("CytoMine: Generating t-SNE plot for FLOWSOM clustering.")
 ## Facet per sample
 ggsave(
-  filename = paste0(flowsomDir,"/merge_clustering_FlowSOM.",device),
-  ggp + facet_wrap(~ sample_id),width=10,height = 10)
+  filename = paste0(newclustDir,"/merge_clustering_FlowSOM.",device),
+  ggp + facet_wrap(~ sample_id,ncol=ncols,nrow=nrows),width=10,height = 10)
 
 ## Facet per Group
 ggsave(
-  filename = paste0(flowsomDir,"/merge_clustering_FlowSOM_GROUP.",device),
-  ggp + facet_wrap(~ condition),width=10,height = 10)
+  filename = paste0(newclustDir,"/merge_clustering_FlowSOM_GROUP.",device),
+  ggp + facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height = 10)
 
 
 #    ggsave(
@@ -295,15 +294,18 @@ ggsave(
       cluster_merging<-read.csv(paste0(inputDir,"/",reclustCXFile))
       local({
         load("cytoMine.RData")
-        n=max(Clusterx)
-        cluster_merging<-cluster_merging[1:n,]
+        #n=max(Clusterx)
+        #cluster_merging<-cluster_merging[1:n,]
         
         cluster_merging$new_cluster <- factor(cluster_merging$new_cluster)
         
         ## New clustering    
         mm <- match(Clusterx, cluster_merging$original_cluster)
         cell_mclust_CX <- cluster_merging$new_cluster[mm]
-        
+        print(length(cell_mclust_CX))
+        print(length(sample_ids))
+        print(Clusterx)
+        print(tsne_inds)
         expr_tsne<-expr[tsne_inds,]
         expr01_tsne<-expr01[tsne_inds,]
         
@@ -324,13 +326,13 @@ ggsave(
         
         ## Facet per sample
         ggsave(
-          filename = paste0(flowsomDir,"/merge_clustering_ClusterX.",device),
-                            ggp + facet_wrap(~ sample_id),width=10,height = 10)
+          filename = paste0(newclustDir,"/merge_clustering_ClusterX.",device),
+                            ggp + facet_wrap(~ sample_id,ncol=ncols,nrow=nrows),width=10,height = 10)
         
         ## Facet per Group
         ggsave(
-          filename = paste0(flowsomDir,"/merge_clustering_ClusterX_GROUP.",device),
-          ggp + facet_wrap(~ condition),width=10,height = 10)
+          filename = paste0(newclustDir,"/merge_clustering_ClusterX_GROUP.",device),
+          ggp + facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height = 10)
                             
                             ## New heatmap
                             plot_clustering_heatmap_wrapper(expr = expr_tsne,
@@ -341,8 +343,9 @@ ggsave(
                             expr01 = expr01_tsne, cell_clustering = cell_clust_CX,
                             color_clusters = colp, cluster_merging = cluster_merging,
                             filename=paste0(newclustDir,"/merged_heatmap_ClusterX.",device))
+                            
                             #boxplot
-                            counts_table <- table(cell_mclust_CX, sample_ids)
+                            counts_table <- table(cell_mclust_CX, sample_ids[tsne_inds])
                             props_table <- t(t(counts_table) / colSums(counts_table)) * 100
                             counts <- as.data.frame.matrix(counts_table)
                             props <- as.data.frame.matrix(props_table)
@@ -378,9 +381,8 @@ md<-read.csv(paste0(inputDir,"/",sampleFile),stringsAsFactors = F,header = T)
 files<-md[,1]
 
 ## fix cols and rows
-ncols=
-if(length(files) %% 3)
-
+ncols=4
+nrows=ceiling(length(files)/ncols)
 
 #assumes first column is marker list
 ml<-read.csv(paste0(inputDir,"/",markerFile),stringsAsFactors = F,header = T)
@@ -617,8 +619,6 @@ if(mode=="basic")
 
 if(is.null(cellSelectionFile)){
 
-
-  
   ## Find and skip duplicates
 dups <- which(!duplicated(expr))
 
@@ -635,19 +635,22 @@ tsne_inds <- lapply(names(inds), function(i){
 })
 
 tsne_inds <- unlist(tsne_inds)
-  print(cellSelectionFile)
-} else {
-  tsne_inds<-read.csv(paste0(inputDir,"/",cellSelectionFile))$cells
-}
-
 tsne_expr <- expr[tsne_inds,]
-write.table(x = tsne_inds,file = paste0(inputDir,"/cellSelectionFile.csv"),row.names = F,col.names = "cells")
 
 message(paste0("CytoMine: Running t-SNE with ",downsample, " cells per sample, preplexity=", perplexity,", theta=", theta," and max_iter=", max_iter))
 set.seed(1234)
 #tsne_out <- Rtsne.multicore(tsne_expr, check_duplicates = FALSE, pca = FALSE,verbose=FALSE,perplexity = perplexity,theta = theta,max_iter = max_iter,num_threads=20)
-
 tsne_out <- Rtsne(tsne_expr, check_duplicates = FALSE, pca = FALSE,verbose=FALSE,perplexity = perplexity,theta = theta,max_iter = max_iter)
+save(tsne_out,tsne_inds,file=paste0(inputDir,"/cellSelectionFile.RData"))
+
+} else {
+  load(file = paste0(inputDir,"/cellSelectionFile.RData") )
+  #write.table(x = tsne_inds,file = paste0(inputDir,"/cellSelectionFile_readin.csv"),row.names = F,col.names = "cells")
+  tsne_expr <- expr[tsne_inds,]
+}
+
+
+
 
 
 ## Plot t-SNE colored by expression
@@ -665,7 +668,7 @@ for (i in 3:(2+ncol(expr)))
   theme_bw() +
   scale_color_gradientn(colnames(dr)[i],
                         colours = colorRampPalette(rev(brewer.pal(n =11, name = "Spectral")))(50)) +
-  facet_wrap(~ sample_id),width=10,height=10)
+  facet_wrap(~ sample_id,ncol=ncols,nrow=nrows),width=10,height=10)
 
 
 #### GROUP PLOTS
@@ -677,7 +680,7 @@ for (i in 3:(2+ncol(expr)))
       theme_bw() +
       scale_color_gradientn(colnames(dr)[i],
                             colours = colorRampPalette(rev(brewer.pal(n =11, name = "Spectral")))(50)) +
-      facet_wrap(~ condition),width=10,height=10)
+      facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height=10)
 
 
 
@@ -696,7 +699,7 @@ for (i in 3:(2+ncol(expr)))
       theme_bw() +
       scale_color_gradientn(colnames(dr)[i],na.value = "white",
                             colours = colorRampPalette(rev(brewer.pal(n =11, name = "Spectral")))(50)) +
-      facet_wrap(~ sample_id),width=10,height=10)
+      facet_wrap(~ sample_id,ncol=ncols,nrow=nrows),width=10,height=10)
 
 
 #### GROUP
@@ -708,7 +711,7 @@ for (i in 3:(2+ncol(expr)))
       theme_bw() +
       scale_color_gradientn(colnames(dr)[i],na.value = "white",
                             colours = colorRampPalette(rev(brewer.pal(n =11, name = "Spectral")))(50)) +
-      facet_wrap(~ condition),width=10,height=10)
+      facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height=10)
 
 # ###############################################################
 # 
@@ -765,12 +768,12 @@ message("CytoMine: Generating t-SNE plot for FLOWSOM clustering.")
 ## Facet per sample
 ggsave(
   filename = paste0(flowsomDir,"/clustering_FlowSOM.",device),
-  ggp + facet_wrap(~ sample_id),width=10,height = 10)
+  ggp + facet_wrap(~ sample_id,ncol=ncols,nrow=nrows),width=10,height = 10)
 
 ## Facet per Group
 ggsave(
   filename = paste0(flowsomDir,"/clustering_FlowSOM_GROUP.",device),
-  ggp + facet_wrap(~ condition),width=10,height = 10)
+  ggp + facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height = 10)
 
 
 
@@ -792,12 +795,12 @@ ggp <- ggplot(dr,  aes(x = tSNE1, y = tSNE2, color = cell_clust_CX)) +
 ## Facet per sample
 ggsave(
   filename = paste0(clusterxDir,"/clustering_ClusterX.",device),
-  ggp + facet_wrap(~ sample_id),width=10,height = 10)
+  ggp + facet_wrap(~ sample_id,ncol=ncols,nrow=nrows),width=10,height = 10)
 
 ## Facet per Group
 ggsave(
   filename = paste0(clusterxDir,"/clustering_ClusterX_GROUP.",device),
-  ggp + facet_wrap(~ condition),width=10,height = 10)
+  ggp + facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height = 10)
 
 ### Heatmap for clusterX
 expr_tsne<-expr[tsne_inds,]
@@ -812,7 +815,7 @@ plot_clustering_heatmap_wrapper(expr = expr_tsne,
 
 
 message("CytoMine:Saving workspace. This may take a while.")
-#save.image(file = "CytoMine.RData")
+save.image(file = "CytoMine.RData")
 #save(cell_clust_FS,code_clust_FS,tsne_out,tsne_inds,sample_ids,md,ml,colp,expr,expr01,sample_id,ClusterX,cell_clust_CX,file = "cytoMine.RData")
 quit(status=0)
 ###############################################

@@ -652,3 +652,16 @@ plot_tsne_marker<-function(exprs,tsne_dims,markers=NULL,prefix=NULL,...)
 
 ####################################
 
+#### GROUP PLOTS
+group_downsample<-function(dframe,downsample)
+{
+  ## Data subsampling: create indices by sample
+  ind <- split(1:length(dframe$condition), dframe$condition)
+  ## How many cells to downsample per-sample
+  ncells <- pmin(table(dframe$condition), downsample)
+  ## Get subsampled indices
+  g_inds <- unlist(lapply(names(ind), function(i){
+    s <- sample(ind[[i]], ncells[i], replace = FALSE)
+  }))
+  return(dframe[g_inds,])
+}

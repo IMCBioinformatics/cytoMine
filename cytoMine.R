@@ -692,11 +692,11 @@ df<-group_downsample(dr,downsample)
 
 for (i in 3:(2+ncol(expr)))
   ggsave(
-    filename = paste0(tsneDir,"/",colnames(dr)[i],"_tsne_GROUP.",device),
-    ggplot(df,  aes(x = tSNE1, y = tSNE2,color=dr[,i])) +
+    filename = paste0(tsneDir,"/",colnames(df)[i],"_tsne_GROUP.",device),
+    ggplot(df,  aes(x = tSNE1, y = tSNE2,color=df[,i])) +
       geom_point(size = 0.2) +
       theme_bw() +
-      scale_color_gradientn(colnames(dr)[i],
+      scale_color_gradientn(colnames(df)[i],
                             colours = colorRampPalette(rev(brewer.pal(n =11, name = "Spectral")))(50)) +
       facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height=10)
 
@@ -725,11 +725,11 @@ df<-group_downsample(dr,downsample)
 
 for (i in 3:(2+ncol(expr)))
   ggsave(
-    filename = paste0(tsneDir,"/",colnames(dr)[i],"_tsne_without_zerosexp_GROUP.",device),
-    ggplot(df,  aes(x = tSNE1, y = tSNE2,color=dr[,i])) +
+    filename = paste0(tsneDir,"/",colnames(df)[i],"_tsne_without_zerosexp_GROUP.",device),
+    ggplot(df,  aes(x = tSNE1, y = tSNE2,color=df[,i])) +
       geom_point(size = 0.2) +
       theme_bw() +
-      scale_color_gradientn(colnames(dr)[i],na.value = "white",
+      scale_color_gradientn(colnames(df)[i],na.value = "white",
                             colours = colorRampPalette(rev(brewer.pal(n =11, name = "Spectral")))(50)) +
       facet_wrap(~ condition,ncol=ncols,nrow=nrows),width=10,height=10)
 
